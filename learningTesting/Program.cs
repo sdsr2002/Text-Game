@@ -5,10 +5,11 @@ namespace learningTesting
 {
     class Program
     {
+
         static public Random random;
         static private Player player;
         static private World world;
-        static private int seed = 241515;
+        public static int seed = 241515;
 
         static public string GetRoomDescription(RoomType type)
         {
@@ -87,50 +88,191 @@ namespace learningTesting
             //return new String(chars);
         }
     }
-
     public class Player
     {
         public string name;
-        public Vector3 pos;
+        private Vector3 pos;
+        private Vector2 pos2D;
         public CompassDirection playerDirection;
         public Player(string _name, Vector3 _pos)
         {
             name = _name;
             pos = _pos;
+            pos2D = new Vector2(_pos.x, _pos.z);
+        }
+        public Player(string _name)
+        {
+            Vector3 _pos = new Vector3(0, 0, 0);
+            name = _name;
+            pos = _pos;
+            pos2D = new Vector2(_pos.x, _pos.z);
+        }
+        public Vector3 GetPositionV3()
+        {
+            return pos;
+        }
+        public Vector2 GetPositionV2()
+        {
+            return pos2D;
+        }
+        public void SetPosition(Vector3 _pos)
+        {
+            pos = _pos;
+            pos2D = new Vector2(_pos.x, _pos.z);
+            return;
+        }
+        public void SetPosition(Vector2 _pos)
+        {
+            SetPosition(new Vector3(_pos.x, pos.y, _pos.z));
+            return;
+        }
+        public void AddPosition(Vector3 _pos)
+        {
+            pos.x += _pos.x;
+            pos.y += _pos.y;
+            pos.z += _pos.z;
+
+            pos2D.x += _pos.x;
+            pos2D.z += _pos.z;
+            return;
+        }
+        public void AddPosition(Vector2 _pos)
+        {
+            this.AddPosition(new Vector3(_pos.x, 0, _pos.z));
+            return;
         }
     }
-
     public class World
     {
         private Player player;
-        private int startRoomCount = 20;
+        private int startRoomCount = 5;
         private List<FloorLevel> floorLevels;
         private int currentFloor = -1;
+        private bool bigMap = true;
         public World(ref Player _player)
         {
             player = _player;
         }
-
         public void main()
         {
+            bool gameRunning = true;
             Setup();
-        }
+            while (gameRunning)
+            {
+                PlayerTurn();
 
+            }
+        }
         private void Setup()
         {
+            Program.random = new Random(Program.seed);
+            startRoomCount = Program.random.Next(4, 10);
             floorLevels = new List<FloorLevel>();
             NewFloor();
             currentFloor = 0;
-            player.pos.y = 0;
+            player.SetPosition(new Vector3(player.GetPositionV2().x,0, player.GetPositionV2().z));
         }
+        private void PlayerTurn()
+        {
+            bool actionTaken = false;
+            Room currentRoom = GetRoom(player.GetPositionV2());
+            while (!actionTaken)
+            {
+                Console.Clear();
+                Console.WriteLine($"{ player.GetPositionV2().x}  { player.GetPositionV2().z}");
+                if (bigMap)
+                DrawBigMap();
+                Console.WriteLine("");
+                if (currentRoom.CanWalk(CompassDirection.North))
+                {
+                    Console.WriteLine("Walk North [W]");
+                }
+                if (currentRoom.CanWalk(CompassDirection.West))
+                {
+                    Console.WriteLine("Walk West [A]");
+                }
+                if (currentRoom.CanWalk(CompassDirection.South))
+                {
+                    Console.WriteLine("Walk South [S]");
+                }
+                if (currentRoom.CanWalk(CompassDirection.East))
+                {
+                    Console.WriteLine("Walk East [D]");
+                }
+                Console.WriteLine("Look Around [M]");
+                Console.WriteLine($"Big Map toggle:{bigMap}");
 
+                ConsoleKeyInfo input = Console.ReadKey();
+                if      (input.Key == ConsoleKey.W && currentRoom.CanWalk(CompassDirection.North))
+                {
+                    player.AddPosition(new Vector2(0, -1));
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.D && currentRoom.CanWalk(CompassDirection.East))
+                {
+                    player.AddPosition(new Vector2(1, 0));
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.A && currentRoom.CanWalk(CompassDirection.West))
+                {
+                    player.AddPosition(new Vector2(-1, 0));
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.S && currentRoom.CanWalk(CompassDirection.South))
+                {
+                    player.AddPosition(new Vector2(0, 1));
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.M)
+                {
+                    DrawCurrentRoom();
+
+                    Console.Write(">>");
+                    Console.ReadLine();
+                }
+            }
+
+        }
+        private void MonsterTurn()
+        {
+
+        }
         public void NewFloor()
         {
-            floorLevels.Add(new FloorLevel(new Vector2(player.pos.x, player.pos.z), new Vector2(startRoomCount, startRoomCount), floorLevels.Count + 1));
+            floorLevels.Add(new FloorLevel(player.GetPositionV2(), new Vector2(startRoomCount, startRoomCount), floorLevels.Count + 1));
             currentFloor++;
-            player.pos.y++;
-            Console.Write(floorLevels[currentFloor].GetMap());
+            player.SetPosition(new Vector3(player.GetPositionV2().x, player.GetPositionV3().y + 1, player.GetPositionV2().z));
+            // Console.Write(floorLevels[currentFloor].GetMap());
         }
+        public Room GetRoom(Vector2 pos)
+        {
+            return floorLevels[currentFloor].rooms[pos.x, pos.z];
+        }
+        public Room GetRoom(Vector3 pos)
+        {
+            return floorLevels[pos.y].rooms[pos.x, pos.z];
+        }
+        private void DrawBigMap()
+        {
+            Vector3 pos = player.GetPositionV3();
+            // Draw Current room your in
+            Console.WriteLine(floorLevels[pos.y].GetMap());
+        }
+        private void DrawCurrentRoom()
+        {
+            Vector3 pos = player.GetPositionV3();
+            // Draw Current room you are in
+            Console.Clear();
+            string[] str = floorLevels[pos.y].rooms[pos.x, pos.z].GetRoomMapView();
+            string printValue = "";
+            foreach (string s in str)
+            {
+                printValue += "\n";
+                printValue += s;
+            }
+            Console.WriteLine(printValue);
+        }
+
     }
 
     public class FloorLevel
@@ -259,7 +401,6 @@ namespace learningTesting
             return;
         }
     }
-
     public class Vector2
     {
         public int x;
@@ -270,7 +411,6 @@ namespace learningTesting
             z = _z;
         }
     }
-
     public class Vector3
     {
         public int x;
@@ -283,7 +423,6 @@ namespace learningTesting
             z = _z;
         }
     }
-
     public class Room
     {
         public RoomType type;
@@ -291,13 +430,11 @@ namespace learningTesting
         public string description;
         public Dictionary<CompassDirection, Room> adjacentRooms;
         public Dictionary<CompassDirection, bool> door;
-
         public void ChangeType(RoomType _type)
         {
             type = _type;
             GetDoors();
         }
-
         public Room(RoomType _type, Vector2 _pos)
         {
             type = _type;
@@ -306,7 +443,6 @@ namespace learningTesting
             GetDoors();
             description = Program.GetRoomDescription(type);
         }
-
         private void GetDoors()
         {
             door = new Dictionary<CompassDirection, bool>();
@@ -344,7 +480,6 @@ namespace learningTesting
                     break;
             }
         }
-
         public string[] GetRoomMapView()
         {
             string[] returnValue = new string[3]
@@ -359,7 +494,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "# #",
-                        " 1 ",
+                        "   ",
                         "# #"
                     };
                     break;
@@ -367,7 +502,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "###",
-                        " 2 ",
+                        "   ",
                         "###"
                     };
                     break;
@@ -375,7 +510,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "# #",
-                        "#3#",
+                        "# #",
                         "# #"
                     };
                     break;
@@ -447,14 +582,65 @@ namespace learningTesting
 
             return returnValue;
         }
+        public bool CanWalk(CompassDirection dir)
+        {
+            if (!door[dir])
+            {
+                return false;
+            }
 
+            switch (dir)
+            {
+                case CompassDirection.North:
+                    if (adjacentRooms[CompassDirection.North] == null)
+                    {
+                        break;
+                    }
+                    if (adjacentRooms[CompassDirection.North].door[CompassDirection.South])
+                    {
+                        return true;
+                    }
+                    break;
+                case CompassDirection.East:
+                    if (adjacentRooms[CompassDirection.East] == null)
+                    {
+                        break;
+                    }
+                    if (adjacentRooms[CompassDirection.East].door[CompassDirection.West])
+                    {
+                        return true;
+                    }
+                    break;
+                case CompassDirection.South:
+                    if (adjacentRooms[CompassDirection.South] == null)
+                    {
+                        break;
+                    }
+                    if (adjacentRooms[CompassDirection.South].door[CompassDirection.North])
+                    {
+                        return true;
+                    }
+                    break;
+                case CompassDirection.West:
+                    if (adjacentRooms[CompassDirection.West] == null)
+                    {
+                        break;
+                    }
+                    if (adjacentRooms[CompassDirection.West].door[CompassDirection.East])
+                    {
+                        return true;
+                    }
+                    break;
+            }
+
+            return false;
+        }
         private string CreateRoomDescription()
         {
 
             return "None";
         }
     }
-
     public enum CompassDirection
     {
         North,
@@ -462,7 +648,6 @@ namespace learningTesting
         South,
         West
     }
-
     public enum RoomType
     {
         Crossroad,
