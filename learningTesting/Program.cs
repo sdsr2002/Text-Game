@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace learningTesting
 {
-    class Program
+    static class Program
     {
 
         static public Random random;
         static private Player player;
-        static private World world;
-        public static int seed = 241515;
+        static public World world;
+        static public int seed = 24241151;
 
         static public string GetRoomDescription(RoomType type)
         {
@@ -34,6 +34,27 @@ namespace learningTesting
                     return "How did this happen?";
             }
             return "No Description Exist for this room";
+        }
+
+        static public Player GetPlayer()
+        {
+            return player;
+        }
+        static public World GetWorld()
+        {
+            return world;
+        }
+        static public int Clamp(int _value, int _minValue, int _maxValue)
+        {
+            if (_value < _minValue)
+            {
+                _value = _minValue;
+            }
+            else if (_value > _maxValue)
+            {
+                _value = _maxValue;
+            }
+            return _value;
         }
 
         static void Main(string[] args)
@@ -62,7 +83,7 @@ namespace learningTesting
             Console.ReadKey();
         }
 
-        public static void StartGame()
+        static public void StartGame()
         {
             world = new World(ref player);
 
@@ -142,6 +163,90 @@ namespace learningTesting
             return;
         }
     }
+    public class Monster
+    {
+        string name;
+        int minDmg;
+        int maxDmg;
+        int maxHealth;
+        int health;
+        Vector3 pos;
+        public Monster(string _name, int _minDmg, int _maxDmg, int _health, Vector3 _pos)
+        {
+            name = _name;
+            minDmg = _minDmg;
+            maxDmg = _maxDmg;
+            maxHealth = _health;
+            health = maxHealth;
+            pos = _pos;
+        }
+        public Vector2 GetDmgParamater()
+        {
+            return new Vector2(minDmg, maxDmg);
+        }
+        public Vector2 GetPosition2V()
+        {
+            return new Vector2(pos.x, pos.z);
+        }
+        public Vector3 GetPosition3V()
+        {
+            return pos;
+        }
+        public void AddPosition(Vector3 _pos)
+        {
+            pos.x += _pos.x;
+            pos.y += _pos.y;
+            pos.z += _pos.z;
+            return;
+        }
+        public string GetName()
+        {
+            return name;
+        }
+        public int GetHealth()
+        {
+            return health;
+        }
+        public bool ReceiveDmg(int _damage)
+        {
+            // Receive Damage to Monster
+            health -= Program.Clamp(_damage, 0, int.MaxValue);
+            // Did not die return: False
+            if (health <= 0)
+            {
+                return true;
+            }
+            return false;
+        }
+        public void DrawEnemy()
+        {
+            // Draw Enemy
+            Console.WriteLine("*Insert Monster Appearance*");
+        }
+        internal bool Move(CompassDirection dir)
+        {
+            if (!Program.GetWorld().GetRoom(pos).CanWalk(dir))
+            {
+                return false;
+            }
+            switch (dir)
+            {
+                case CompassDirection.North:
+                    AddPosition(new Vector3(0, 0, -1));
+                    break;
+                case CompassDirection.East:
+                    AddPosition(new Vector3(1, 0, 0));
+                    break;
+                case CompassDirection.South:
+                    AddPosition(new Vector3(0, 0, +1));
+                    break;
+                case CompassDirection.West:
+                    AddPosition(new Vector3(-1, 0, 0));
+                    break;
+            }
+            return true;
+        }
+    }
     public class World
     {
         private Player player;
@@ -160,7 +265,7 @@ namespace learningTesting
             while (gameRunning)
             {
                 PlayerTurn();
-
+                MonsterTurn();
             }
         }
         private void Setup()
@@ -235,11 +340,22 @@ namespace learningTesting
         }
         private void MonsterTurn()
         {
-
+            int emergenceBreak = 0;
+            foreach (Monster monster in floorLevels[currentFloor].GetMonsterList())
+            {
+                while (!monster.Move((CompassDirection)Program.random.Next(0, 4)))
+                {
+                    if (emergenceBreak > 10)
+                    {
+                        break;
+                    }
+                    emergenceBreak++;
+                }
+            }
         }
         public void NewFloor()
         {
-            floorLevels.Add(new FloorLevel(player.GetPositionV2(), new Vector2(startRoomCount, startRoomCount), floorLevels.Count + 1));
+            floorLevels.Add(new FloorLevel(player.GetPositionV2(), new Vector2(startRoomCount, startRoomCount), floorLevels.Count));
             currentFloor++;
             player.SetPosition(new Vector3(player.GetPositionV2().x, player.GetPositionV3().y + 1, player.GetPositionV2().z));
             // Console.Write(floorLevels[currentFloor].GetMap());
@@ -263,7 +379,7 @@ namespace learningTesting
             Vector3 pos = player.GetPositionV3();
             // Draw Current room you are in
             Console.Clear();
-            string[] str = floorLevels[pos.y].rooms[pos.x, pos.z].GetRoomMapView();
+            string[] str = floorLevels[pos.y].rooms[pos.x, pos.z].GetRoomMapView(false);
             string printValue = "";
             foreach (string s in str)
             {
@@ -272,23 +388,40 @@ namespace learningTesting
             }
             Console.WriteLine(printValue);
         }
-
     }
-
     public class FloorLevel
     {
         public int level;
         public Room[,] rooms;
         Vector2 floorSize;
-
+        List<Monster> monsters;
         public FloorLevel(Vector2 _stairsPos, Vector2 _floorSize, int _level)
         {
             level = _level;
             floorSize = _floorSize;
             CreateRooms(_floorSize);
             rooms[_stairsPos.x, _stairsPos.z].ChangeType(RoomType.StairCase);
+            generatemonsters();
         }
-
+        // Create Monsters Randomly in Floor
+        private void generatemonsters()
+        {
+            monsters = new List<Monster>();
+            int monstercounter = Program.random.Next(3, 5);
+            for (int i = 0; i < monstercounter; i++)
+            {
+                monsters.Add
+                (
+                    new Monster("test", 1, 2, 3,
+                        new Vector3(
+                            Program.random.Next(0, floorSize.x),
+                            level,
+                            Program.random.Next(0, floorSize.z)
+                                    )
+                        )
+                );
+            }
+        }
         // Returns Map (Currently in Numbers)
         public string GetMap()
         {
@@ -317,7 +450,6 @@ namespace learningTesting
             }
             return returnValue;
         }
-
         // Create Rooms for this floor
         private void CreateRooms(Vector2 _floorSize)
         {
@@ -326,7 +458,7 @@ namespace learningTesting
             {
                 for (int z = 0; z < _floorSize.z; z++)
                 {
-                    rooms[x, z] = new Room((RoomType)Program.random.Next(0, (int)RoomType.TotalRooms), new Vector2(x,z));
+                    rooms[x, z] = new Room(this, (RoomType)Program.random.Next(0, (int)RoomType.TotalRooms), new Vector2(x,z));
                     // Console.WriteLine(rooms[x,z]);
                 }
             }
@@ -400,6 +532,11 @@ namespace learningTesting
             }
             return;
         }
+
+        internal List<Monster> GetMonsterList()
+        {
+            return monsters;
+        }
     }
     public class Vector2
     {
@@ -425,6 +562,7 @@ namespace learningTesting
     }
     public class Room
     {
+        private FloorLevel floor;
         public RoomType type;
         public Vector2 pos;
         public string description;
@@ -435,8 +573,9 @@ namespace learningTesting
             type = _type;
             GetDoors();
         }
-        public Room(RoomType _type, Vector2 _pos)
+        public Room(FloorLevel _floor, RoomType _type, Vector2 _pos)
         {
+            floor = _floor;
             type = _type;
             pos = _pos;
             adjacentRooms = new Dictionary<CompassDirection, Room>();
@@ -482,6 +621,10 @@ namespace learningTesting
         }
         public string[] GetRoomMapView()
         {
+            return GetRoomMapView(true);
+        }
+        public string[] GetRoomMapView(bool withPlayer)
+        {
             string[] returnValue = new string[3]
                     {
                         "NaN",
@@ -494,7 +637,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "# #",
-                        "   ",
+                        " ' ",
                         "# #"
                     };
                     break;
@@ -502,7 +645,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "###",
-                        "   ",
+                        " ' ",
                         "###"
                     };
                     break;
@@ -510,7 +653,7 @@ namespace learningTesting
                     returnValue = new string[3]
                     {
                         "# #",
-                        "# #",
+                        "#'#",
                         "# #"
                     };
                     break;
@@ -577,6 +720,23 @@ namespace learningTesting
                             //Program.replace(ref returnValue[1], 2, '#');
                         }
                         break;
+                }
+            }
+            Vector2 playerPos = Program.GetPlayer().GetPositionV2();
+            if (pos.x == playerPos.x && pos.z == playerPos.z && withPlayer)
+            {
+                returnValue[1] = returnValue[1].Remove(1, 1).Insert(1, "P");
+            }
+            else
+            {
+                Vector2 monsterPosition;
+                foreach(Monster monster in floor.GetMonsterList())
+                {
+                    monsterPosition = monster.GetPosition2V();
+                    if (monsterPosition.x == pos.x && monsterPosition.z == pos.z)
+                    {
+                        returnValue[1] = returnValue[1].Remove(1, 1).Insert(1, "E");
+                    }
                 }
             }
 
@@ -657,5 +817,4 @@ namespace learningTesting
         TotalRooms,
         StairCase
     }
-
 }
