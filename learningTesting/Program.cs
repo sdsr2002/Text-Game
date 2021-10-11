@@ -111,10 +111,32 @@ namespace learningTesting
     }
     public class Player
     {
+        // Combat
+        private int _health = 10;
+        private int _maxHealth;
+        private int _minDamage = 1;
+        private int _maxDamage = 3;
+        // Movement
         public string name;
         private Vector3 pos;
         private Vector2 pos2D;
         public CompassDirection playerDirection;
+        //
+        public bool ReceiveDmg(int damage)
+        {
+            // Receive Damage to Monster
+            _health -= Program.Clamp(damage, 0, int.MaxValue);
+            // Did not die return: False
+            if (_health <= 0)
+            {
+                return true;
+            }
+            return false;
+        }
+        public Vector2 GetDamage()
+        {
+            return new Vector2(_minDamage, _maxDamage);
+        }
         public Player(string _name, Vector3 _pos)
         {
             name = _name;
@@ -266,7 +288,41 @@ namespace learningTesting
             {
                 PlayerTurn();
                 MonsterTurn();
+                gameRunning = CheckMonsterOverlap();
             }
+
+            Console.WriteLine("--You Died--");
+            Console.ReadLine();
+        }
+        private bool CheckMonsterOverlap()
+        {
+            Vector2 playerPos = player.GetPositionV2();
+            while (true)
+            {
+                int x = 0;
+                Monster monstersAtPlayer = null;
+                foreach (Monster monster in floorLevels[currentFloor].GetMonsterList())
+                {
+                    Vector2 mPos = monster.GetPosition2V();
+                    if (mPos.x == playerPos.x && mPos.z == playerPos.z)
+                    {
+                        monstersAtPlayer = monster;
+                        break;
+                    }
+                    x++;
+                }
+                if (monstersAtPlayer != null)
+                {
+                    bool playerDied = MonsterEncounter(monstersAtPlayer, x);
+                    if (playerDied)
+                    {
+                        return false;
+                    }
+                }
+                else
+                    break;
+            }
+            return true;
         }
         private void Setup()
         {
@@ -387,6 +443,20 @@ namespace learningTesting
                 printValue += s;
             }
             Console.WriteLine(printValue);
+        }
+        private bool MonsterEncounter(Monster monster, int monsterIndex)
+        {
+            bool tempBattle = true;
+            while (tempBattle)
+            {
+                Console.Clear();
+                Console.WriteLine("Battle Done");
+                Console.ReadLine();
+                Console.Clear();
+                floorLevels[currentFloor].GetMonsterList().Remove(monster);
+                break;
+            }
+            return true; // returns if player died
         }
     }
     public class FloorLevel
