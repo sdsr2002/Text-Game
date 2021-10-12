@@ -6,7 +6,8 @@ namespace learningTesting
     static class Program
     {
 
-        static public Random random;
+        static public Random randomBuild;
+        static public Random randomAI;
         static private Player player;
         static public World world;
         static public int seed = 24241151;
@@ -23,7 +24,7 @@ namespace learningTesting
                                     "3",
                                     "4"
                     };
-                    return desc[random.Next(0, desc.Length)];
+                    return desc[randomBuild.Next(0, desc.Length)];
                 case RoomType.Hallway_Horizontal:
                     break;
                 case RoomType.Hallway_Vertical:
@@ -35,7 +36,6 @@ namespace learningTesting
             }
             return "No Description Exist for this room";
         }
-
         static public Player GetPlayer()
         {
             return player;
@@ -44,19 +44,18 @@ namespace learningTesting
         {
             return world;
         }
-        static public int Clamp(int _value, int _minValue, int _maxValue)
+        static public int Clamp(int value, int minValue, int maxValue)
         {
-            if (_value < _minValue)
+            if (value < minValue)
             {
-                _value = _minValue;
+                value = minValue;
             }
-            else if (_value > _maxValue)
+            else if (value > maxValue)
             {
-                _value = _maxValue;
+                value = maxValue;
             }
-            return _value;
+            return value;
         }
-
         static void Main(string[] args)
         {
             // TODO:
@@ -68,28 +67,51 @@ namespace learningTesting
             // Input
             // Obstacles
 
-            Program.random = new Random(seed);
-
+            Program.randomBuild = new Random(seed);
+            Program.randomAI = new Random(seed);
             Console.WriteLine("Hello, What's your name Adventurer?");
-            Console.Write(">");
+            Console.Write(">>");
             string _username = Console.ReadLine();
-            Program.player = new Player(_username, new Vector3(1,-1,1));
-            Console.WriteLine($"Hello {_username}, do you want to go on an adventure?"
-                + $"{Environment.NewLine}" 
-                + "[Y]es or [N]o"
-                );
-            ConsoleKeyInfo userInput = Console.ReadKey();
-            StartGame();
-            Console.ReadKey();
+            Program.player = new Player(_username, new Vector3(1, -1, 1));
+            while (true)
+            {
+                Console.WriteLine($"Hello {player.name}, do you want to go on an adventure?"
+                    + $"{Environment.NewLine}"
+                    + "[Y]es or [N]o | Name Change [C]"
+                    );
+                Console.Write(">>");
+                ConsoleKeyInfo userInput;
+                while (true)
+                {
+                    userInput = Console.ReadKey();
+                    if (userInput.Key == ConsoleKey.Y)
+                    {
+                        StartGame();
+                        break;
+                    }
+                    else if (userInput.Key == ConsoleKey.N)
+                    {
+                        Console.WriteLine("\nBye");
+                        Console.ReadKey();
+                        return;
+                    }
+                    else if (userInput.Key == ConsoleKey.C)
+                    {
+                        Console.WriteLine("\nHello, What's your name Adventurer?");
+                        Console.Write(">>");
+                        player.name = Console.ReadLine();
+                        break;
+                    }
+                }
+                Console.Clear();
+            }
         }
-
         static public void StartGame()
         {
             world = new World(ref player);
 
             world.main();
         }
-
         static public void replace(ref String str, int index, char replace)
         {
             if (str == null)
@@ -113,7 +135,7 @@ namespace learningTesting
     {
         // Combat
         private int _health = 10;
-        private int _maxHealth;
+        private int _maxHealth = 10;
         private int _minDamage = 1;
         private int _maxDamage = 3;
         // Movement
@@ -184,6 +206,26 @@ namespace learningTesting
             this.AddPosition(new Vector3(_pos.x, 0, _pos.z));
             return;
         }
+
+        internal int GetHealth()
+        {
+            return _health;
+        }
+
+        internal int GetMaxHealth()
+        {
+            return _maxHealth;
+        }
+
+        internal void Heal(int healAmount)
+        {
+            _health += Program.Clamp(healAmount,0 , int.MaxValue);
+            if (_health > _maxHealth)
+            {
+                _health = _maxHealth;
+            }
+            return;
+        }
     }
     public class Monster
     {
@@ -202,7 +244,7 @@ namespace learningTesting
             health = maxHealth;
             pos = _pos;
         }
-        public Vector2 GetDmgParamater()
+        public Vector2 GetDamage()
         {
             return new Vector2(minDmg, maxDmg);
         }
@@ -268,6 +310,11 @@ namespace learningTesting
             }
             return true;
         }
+
+        internal int GetMaxHealth()
+        {
+            return maxHealth;
+        }
     }
     public class World
     {
@@ -276,23 +323,34 @@ namespace learningTesting
         private List<FloorLevel> floorLevels;
         private int currentFloor = -1;
         private bool bigMap = true;
+        bool gameRunning = true;
         public World(ref Player _player)
         {
             player = _player;
         }
         public void main()
         {
-            bool gameRunning = true;
+            gameRunning = true;
             Setup();
+            GameLoop();
+            if (player.GetHealth() <= 0) Console.WriteLine("--You Died--");
+            else Console.WriteLine($"Hope to see you soon:{player.name}");
+            Console.Write(">>");
+            Console.ReadLine();
+        }
+        private void GameLoop()
+        {
+            bool playerAlive;
             while (gameRunning)
             {
                 PlayerTurn();
-                MonsterTurn();
-                gameRunning = CheckMonsterOverlap();
+                if (gameRunning)
+                {
+                    MonsterTurn();
+                    playerAlive = CheckMonsterOverlap();
+                    if (!playerAlive) gameRunning = false;
+                }
             }
-
-            Console.WriteLine("--You Died--");
-            Console.ReadLine();
         }
         private bool CheckMonsterOverlap()
         {
@@ -313,11 +371,12 @@ namespace learningTesting
                 }
                 if (monstersAtPlayer != null)
                 {
-                    bool playerDied = MonsterEncounter(monstersAtPlayer, x);
+                    bool playerDied = MonsterEncounter(monstersAtPlayer);
                     if (playerDied)
                     {
                         return false;
                     }
+                    floorLevels[currentFloor].GetMonsterList().Remove(monstersAtPlayer); // Removes Monster from list of monsters
                 }
                 else
                     break;
@@ -326,12 +385,30 @@ namespace learningTesting
         }
         private void Setup()
         {
-            Program.random = new Random(Program.seed);
-            startRoomCount = Program.random.Next(4, 10);
+            Program.randomBuild = new Random(Program.seed);
+            Program.randomAI = new Random(Program.seed);
             floorLevels = new List<FloorLevel>();
             NewFloor();
             currentFloor = 0;
             player.SetPosition(new Vector3(player.GetPositionV2().x,0, player.GetPositionV2().z));
+        }
+        private void GoUpStairs()
+        {
+            if (floorLevels.Count >= currentFloor + 1)
+            {
+                NewFloor();
+            }
+            else
+            {
+                currentFloor++;
+                player.SetPosition(new Vector3(player.GetPositionV2().x, player.GetPositionV3().y + 1, player.GetPositionV2().z));
+            }
+        }
+        private void GoDownStairs()
+        {
+            if (currentFloor == 0) return;
+                currentFloor--;
+            player.SetPosition(new Vector3(player.GetPositionV2().x, player.GetPositionV3().y - 1, player.GetPositionV2().z));
         }
         private void PlayerTurn()
         {
@@ -344,27 +421,39 @@ namespace learningTesting
                 if (bigMap)
                 DrawBigMap();
                 Console.WriteLine("");
+                Console.WriteLine("-------------------------");
                 if (currentRoom.CanWalk(CompassDirection.North))
                 {
-                    Console.WriteLine("Walk North [W]");
+                    Console.Write(" Walk North [W]");
                 }
                 if (currentRoom.CanWalk(CompassDirection.West))
                 {
-                    Console.WriteLine("Walk West [A]");
+                    Console.Write(" Walk West [A]");
                 }
                 if (currentRoom.CanWalk(CompassDirection.South))
                 {
-                    Console.WriteLine("Walk South [S]");
+                    Console.Write(" Walk South [S]");
                 }
                 if (currentRoom.CanWalk(CompassDirection.East))
                 {
-                    Console.WriteLine("Walk East [D]");
+                    Console.Write(" Walk East [D]");
                 }
-                Console.WriteLine("Look Around [M]");
+                Console.WriteLine("");
+                if (currentRoom.GetRoomType() == RoomType.StairCase)
+                {
+                    Console.WriteLine("-------------------------");
+                    Console.WriteLine("Go Up Stairs [U]");
+                    if (currentFloor != 0)
+                    Console.WriteLine("Go Down Stairs [J]");
+                }
+                Console.WriteLine("-------------------------");
+                Console.WriteLine("Open Map [M]");
                 Console.WriteLine($"Big Map toggle:{bigMap}");
-
+                Console.WriteLine("-------------------------");
+                Console.WriteLine("Quit [Esc]");
+                
                 ConsoleKeyInfo input = Console.ReadKey();
-                if      (input.Key == ConsoleKey.W && currentRoom.CanWalk(CompassDirection.North))
+                if (input.Key == ConsoleKey.W && currentRoom.CanWalk(CompassDirection.North))
                 {
                     player.AddPosition(new Vector2(0, -1));
                     actionTaken = true;
@@ -384,6 +473,36 @@ namespace learningTesting
                     player.AddPosition(new Vector2(0, 1));
                     actionTaken = true;
                 }
+                else if (input.Key == ConsoleKey.U && currentRoom.GetRoomType() == RoomType.StairCase)
+                {
+                    GoUpStairs();
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.J && currentRoom.GetRoomType() == RoomType.StairCase)
+                {
+                    GoDownStairs();
+                    actionTaken = true;
+                }
+                else if (input.Key == ConsoleKey.Escape)
+                {
+                    ConsoleKeyInfo securityCheck;
+                    while (true)
+                    {
+                        Console.WriteLine("Are You sure you want to Quit the game");
+                        Console.WriteLine("Yes [Y]");
+                        Console.WriteLine("No  [N]");
+                        securityCheck = Console.ReadKey();
+
+                        if (securityCheck.Key == ConsoleKey.Y)
+                        {
+                            gameRunning = false;
+                            actionTaken = true;
+                            return;
+                        }
+                        else if (securityCheck.Key == ConsoleKey.N)
+                            break;
+                    }
+                }
                 else if (input.Key == ConsoleKey.M)
                 {
                     DrawCurrentRoom();
@@ -392,14 +511,15 @@ namespace learningTesting
                     Console.ReadLine();
                 }
             }
-
         }
         private void MonsterTurn()
         {
             int emergenceBreak = 0;
             foreach (Monster monster in floorLevels[currentFloor].GetMonsterList())
             {
-                while (!monster.Move((CompassDirection)Program.random.Next(0, 4)))
+                int dir = Program.randomAI.Next(0, 5);
+                if (dir != 4)
+                while (!monster.Move((CompassDirection)dir))
                 {
                     if (emergenceBreak > 10)
                     {
@@ -411,6 +531,7 @@ namespace learningTesting
         }
         public void NewFloor()
         {
+            startRoomCount = Program.randomBuild.Next(4, 10);
             floorLevels.Add(new FloorLevel(player.GetPositionV2(), new Vector2(startRoomCount, startRoomCount), floorLevels.Count));
             currentFloor++;
             player.SetPosition(new Vector3(player.GetPositionV2().x, player.GetPositionV3().y + 1, player.GetPositionV2().z));
@@ -444,19 +565,70 @@ namespace learningTesting
             }
             Console.WriteLine(printValue);
         }
-        private bool MonsterEncounter(Monster monster, int monsterIndex)
+        private bool MonsterEncounter(Monster monster)
         {
             bool tempBattle = true;
             while (tempBattle)
             {
-                Console.Clear();
-                Console.WriteLine("Battle Done");
-                Console.ReadLine();
-                Console.Clear();
-                floorLevels[currentFloor].GetMonsterList().Remove(monster);
-                break;
+                ConsoleKeyInfo input;
+                while (true)
+                {
+                    Console.Clear();
+                    Console.WriteLine("----Battle----\n" +
+                                     $"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()} Hp\n" +
+                                     $"{monster.GetName()} | {monster.GetHealth()} / {monster.GetMaxHealth()} Hp\n" +
+                                      "Attack [A]\n" +
+                                      "Heal [H]");
+                    Console.Write(">>");
+                    input = Console.ReadKey();
+                    Console.WriteLine("--------------");
+                    if (input.Key == ConsoleKey.A)
+                    {
+                        Vector2 pDmg = player.GetDamage();
+                        int instancePlayerDamage = Program.randomAI.Next(pDmg.x, pDmg.z);
+                        monster.ReceiveDmg(instancePlayerDamage);
+                        Console.WriteLine($"You strike: {instancePlayerDamage} Damage\n" +
+                                          $"To {monster.GetName()} | {monster.GetHealth()} / {monster.GetMaxHealth()} Hp");
+                        if (monster.GetHealth() <= 0)
+                        {
+                            return false;
+                        }
+                        break;
+                    }
+                    else if (input.Key == ConsoleKey.H)
+                    {
+                        Vector2 pDmg = player.GetDamage();
+                        int instancePlayerHeal = Program.randomAI.Next(pDmg.x, pDmg.z);
+                        player.Heal(instancePlayerHeal);
+                        Console.WriteLine($"{player.name} Heals: {instancePlayerHeal} Hp");
+                        Console.WriteLine($"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()}");
+                        break;
+                    }
+                }
+                if (monster.GetHealth() <= 0)
+                {
+                    Console.WriteLine($"{monster.GetName()} Died");
+                    tempBattle = false;
+                    return false;
+                }
+                else
+                {
+                    Vector2 monsterDmg = monster.GetDamage();
+                    int instanceMonsterDamage = Program.randomAI.Next(monsterDmg.x, monsterDmg.z);
+                    player.ReceiveDmg(instanceMonsterDamage);
+                    Console.WriteLine($"{monster.GetName()} Strikes you for {instanceMonsterDamage} Damage");
+                    Console.WriteLine($"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()}");
+                }
+                if (player.GetHealth() <= 0)
+                {
+                    return true; // player Died
+                }
+                Console.WriteLine($"-------------");
+                Console.Write(">>");
+                Console.ReadKey();
             }
-            return true; // returns if player died
+
+            return false; // returns true if player died
         }
     }
     public class FloorLevel
@@ -477,16 +649,16 @@ namespace learningTesting
         private void generatemonsters()
         {
             monsters = new List<Monster>();
-            int monstercounter = Program.random.Next(3, 5);
+            int monstercounter = Program.randomAI.Next(3, 5);
             for (int i = 0; i < monstercounter; i++)
             {
                 monsters.Add
                 (
                     new Monster("test", 1, 2, 3,
                         new Vector3(
-                            Program.random.Next(0, floorSize.x),
+                            Program.randomAI.Next(0, floorSize.x),
                             level,
-                            Program.random.Next(0, floorSize.z)
+                            Program.randomAI.Next(0, floorSize.z)
                                     )
                         )
                 );
@@ -528,7 +700,7 @@ namespace learningTesting
             {
                 for (int z = 0; z < _floorSize.z; z++)
                 {
-                    rooms[x, z] = new Room(this, (RoomType)Program.random.Next(0, (int)RoomType.TotalRooms), new Vector2(x,z));
+                    rooms[x, z] = new Room(this, (RoomType)Program.randomBuild.Next(0, (int)RoomType.TotalRooms), new Vector2(x,z));
                     // Console.WriteLine(rooms[x,z]);
                 }
             }
@@ -869,6 +1041,11 @@ namespace learningTesting
         {
 
             return "None";
+        }
+
+        internal RoomType GetRoomType()
+        {
+            return type;
         }
     }
     public enum CompassDirection
