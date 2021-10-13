@@ -35,9 +35,9 @@ namespace Text_Game
             }
             return "No Description Exist for this room";
         }
-        static public Player GetPlayer()
+        static public ref Player GetPlayer()
         {
-            return player;
+            return ref player;
         }
         static public World GetWorld()
         {
@@ -85,6 +85,10 @@ namespace Text_Game
                     userInput = Console.ReadKey();
                     if (userInput.Key == ConsoleKey.Y)
                     {
+                        if (player.GetHealth() <= 0)
+                        {
+                            player = new Player(player.name);
+                        }
                         StartGame();
                         break;
                     }

@@ -295,16 +295,13 @@ namespace Text_Game
                 if (monster.GetHealth() <= 0)
                 {
                     Console.WriteLine($"{monster.GetName()} Died");
+                    Console.ReadKey();
                     tempBattle = false;
                     return false;
                 }
                 else
                 {
-                    Vector2 monsterDmg = monster.GetDamage();
-                    int instanceMonsterDamage = Program.randomAI.Next(monsterDmg.x, monsterDmg.z);
-                    player.ReceiveDmg(instanceMonsterDamage);
-                    Console.WriteLine($"{monster.GetName()} Strikes you for {instanceMonsterDamage} Damage");
-                    Console.WriteLine($"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()}");
+                    monster.DoAction();
                 }
                 if (player.GetHealth() <= 0)
                 {
@@ -339,16 +336,42 @@ namespace Text_Game
             int monstercounter = Program.randomAI.Next(3, 5);
             for (int i = 0; i < monstercounter; i++)
             {
-                monsters.Add
-                (
-                    new Monster("test", 1, 2, 3,
-                        new Vector3(
-                            Program.randomAI.Next(0, floorSize.x),
-                            level,
-                            Program.randomAI.Next(0, floorSize.z)
+                switch ((MonsterType)Program.randomAI.Next(0,(int)MonsterType.TotalAmountOfTypes))
+                {
+                    case MonsterType.Goblin:
+                        monsters.Add(
+                                new Goblin(
+                                    new Vector2
+                                        (
+                                        Program.randomAI.Next(0, floorSize.x),
+                                        Program.randomAI.Next(0, floorSize.z)
+                                        )
                                     )
-                        )
-                );
+                            );
+                        break;
+                    case MonsterType.Giant_Spider:
+                        monsters.Add(
+                                new GiantSpider(
+                                    new Vector2
+                                        (
+                                        Program.randomAI.Next(0, floorSize.x),
+                                        Program.randomAI.Next(0, floorSize.z)
+                                        )
+                                    )
+                            );
+                        break;
+                    case MonsterType.Kobold:
+                        monsters.Add(
+                                new Kobold(
+                                    new Vector2
+                                        (
+                                        Program.randomAI.Next(0, floorSize.x),
+                                        Program.randomAI.Next(0, floorSize.z)
+                                        )
+                                    )
+                            );
+                        break;
+                }
             }
         }
         // Returns Map (Currently in Numbers)
