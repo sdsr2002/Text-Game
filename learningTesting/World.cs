@@ -712,5 +712,5 @@ namespace Text_Game
         {
             return type;
         }
-    }
+    } 
 }
