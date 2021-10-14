@@ -8,21 +8,25 @@ namespace Text_Game
 {
     public class Monster
     {
-        protected string name;
-        protected int minDmg;
-        protected int maxDmg;
-        protected int maxHealth;
-        protected int health;
-        protected string _description;
+        public string name { get; private set; }
+        public int minDmg { get; private set; }
+        public int maxDmg { get; private set; }
+        public int maxHealth { get; private set; }
+        public int health { get; private set; }
+        public string _description { get; private set; }
         protected Vector2 pos;
         protected List<ActionData> actions;
-        public Monster(string _name, int _minDmg, int _maxDmg, int _health, Vector2 _pos,string description)
+        public Vector2 Damage => new Vector2(minDmg, maxDmg);
+        public Vector2 Position2V => pos;
+        public int Health => health;
+
+        public Monster(string _name, int _minDmg, int _maxDmg, int _maxHealth, Vector2 _pos,string description)
         {
             SetupAction();
-               name = _name;
+            name = _name;
             minDmg = _minDmg;
             maxDmg = _maxDmg;
-            maxHealth = _health;
+            maxHealth = _maxHealth;
             health = maxHealth;
             pos = _pos;
             _description = description;
@@ -31,27 +35,11 @@ namespace Text_Game
         {
             return ref actions;
         }
-        public Vector2 GetDamage()
-        {
-            return new Vector2(minDmg, maxDmg);
-        }
-        public Vector2 GetPosition2V()
-        {
-            return pos;
-        }
         public void AddPosition(Vector2 _pos)
         {
             pos.x += _pos.x;
             pos.z += _pos.z;
             return;
-        }
-        public string GetName()
-        {
-            return name;
-        }
-        public int GetHealth()
-        {
-            return health;
         }
         public bool ReceiveDmg(int _damage)
         {
@@ -71,7 +59,7 @@ namespace Text_Game
         }
         public bool Move(CompassDirection dir)
         {
-            if (!Program.GetWorld().GetRoom(pos).CanWalk(dir))
+            if (!Program.World.GetRoom(pos).CanWalk(dir))
             {
                 return false;
             }
@@ -92,9 +80,8 @@ namespace Text_Game
             }
             return true;
         }
-        public virtual void DoAction()
+        public virtual void CombatAction()
         {
-            int chance = Program.randomAI.Next(0, 100);
             bool doneAction;
             foreach(ActionData act in actions)
             {
@@ -113,12 +100,13 @@ namespace Text_Game
         {
             actions = new List<ActionData>()
             {
-                new ActionData(() => MendWound(ref Program.GetPlayer()), 10),
-                new ActionData(() => AttackPlayer(ref Program.GetPlayer()), 100)
+                // Mold // new ActionData(() => MyActionToDo(ref Program.GetPlayer()), (int)chanceOfAction), // Mold //
+                new ActionData(() => MendWound(ref Program.Player), 10),
+                new ActionData(() => AttackPlayer(ref Program.Player), 100)
             };
         }
         // Actions
-        public void MendWound(ref Player player)
+        protected void MendWound(ref Player player)
         {
             int x = Program.randomAI.Next(minDmg, maxDmg);
             Console.WriteLine($"{name} Healed themself:{x}");
@@ -126,36 +114,16 @@ namespace Text_Game
             Console.WriteLine($"{name} | {health}/{maxHealth}");
         }
 
-        public void AttackPlayer(ref Player player)
+        protected void AttackPlayer(ref Player player)
         {
-            Vector2 monsterDmg = GetDamage();
+            Vector2 monsterDmg = Damage;
             int instanceMonsterDamage = Program.randomAI.Next(monsterDmg.x, monsterDmg.z);
             player.ReceiveDmg(instanceMonsterDamage);
             Console.WriteLine($"{name} Strikes you for {instanceMonsterDamage} Damage");
-            Console.WriteLine($"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()}");
+            Console.WriteLine($"{player.name} | {player.Health} / {player.MaxHealth}");
         }
     }
-    public class Goblin : Monster
-    {
-        public Goblin(Vector2 pos): base("goblin",1,3,4,pos, "a little Green man") 
-        { 
 
-        }
-    }
-    public class Kobold : Monster
-    {
-        public Kobold(Vector2 pos) : base("Kobold", 2, 3, 7, pos, "a big Furry Rat")
-        {
-
-        }
-    }
-    public class GiantSpider : Monster
-    {
-        public GiantSpider(Vector2 pos) : base("Giant Spider", 0, 6, 2, pos, "a ginormous Spider")
-        {
-
-        }
-    }
     public class ActionData
     {
         private Action _action;
@@ -175,11 +143,4 @@ namespace Text_Game
         }
     }
 
-    public enum MonsterType 
-    {
-        Goblin,
-        Kobold,
-        Giant_Spider,
-        TotalAmountOfTypes
-    }
 }

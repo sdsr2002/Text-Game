@@ -8,8 +8,9 @@ namespace Text_Game
         static public Random randomBuild;
         static public Random randomAI;
         static private Player player;
-        static public World world;
+        static private World world;
         static public int seed = 24241151;
+        static public bool randomSeed = true;
 
         static public string GetRoomDescription(RoomType type)
         {
@@ -35,14 +36,8 @@ namespace Text_Game
             }
             return "No Description Exist for this room";
         }
-        static public ref Player GetPlayer()
-        {
-            return ref player;
-        }
-        static public World GetWorld()
-        {
-            return world;
-        }
+        static public ref Player Player => ref player;
+        static public World World => world;
         static public int Clamp(int value, int minValue, int maxValue)
         {
             if (value < minValue)
@@ -65,7 +60,8 @@ namespace Text_Game
             // Theme
             // Input
             // Obstacles
-
+            if (randomSeed)
+                seed = new Random().Next(0, 10000);
             Program.randomBuild = new Random(seed);
             Program.randomAI = new Random(seed);
             Console.WriteLine("Hello, What's your name Adventurer?");
@@ -76,7 +72,8 @@ namespace Text_Game
             {
                 Console.WriteLine($"Hello {player.name}, do you want to go on an adventure?"
                     + $"{Environment.NewLine}"
-                    + "[Y]es or [N]o | Name Change [C]"
+                    + "[Y]es or [N]o | Name Change [C] | Set Seed[S]"
+                    + $"\nSeed:{seed}"
                     );
                 Console.Write(">>");
                 ConsoleKeyInfo userInput;
@@ -85,7 +82,7 @@ namespace Text_Game
                     userInput = Console.ReadKey();
                     if (userInput.Key == ConsoleKey.Y)
                     {
-                        if (player.GetHealth() <= 0)
+                        if (player.Health <= 0)
                         {
                             player = new Player(player.name);
                         }
@@ -103,6 +100,23 @@ namespace Text_Game
                         Console.WriteLine("\nHello, What's your name Adventurer?");
                         Console.Write(">>");
                         player.name = Console.ReadLine();
+                        break;
+                    }
+                    else if (userInput.Key == ConsoleKey.S)
+                    {
+                        Console.Clear();
+                        while (true)
+                        {
+                            Console.Write("input new seed:");
+                            try
+                            {
+                                seed = int.Parse(Console.ReadLine());
+                                break;
+                            }
+                            catch { }
+                            Console.Clear();
+                            Console.WriteLine("'Number(s)' please.");
+                        }
                         break;
                     }
                 }

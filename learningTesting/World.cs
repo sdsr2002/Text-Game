@@ -17,14 +17,14 @@ namespace Text_Game
         public World(ref Player _player)
         {
             player = _player;
-            Console.SetWindowSize(60, 63);
+            Console.SetWindowSize(63, 63);
         }
         public void main()
         {
             gameRunning = true;
             Setup();
             GameLoop();
-            if (player.GetHealth() <= 0) Console.WriteLine("--You Died--");
+            if (player.Health <= 0) Console.WriteLine("--You Died--");
             else Console.WriteLine($"Hope to see you soon:{player.name}");
             Console.Write(">>");
             Console.ReadLine();
@@ -52,7 +52,7 @@ namespace Text_Game
                 Monster monstersAtPlayer = null;
                 foreach (Monster monster in floorLevels[currentFloor].GetMonsterList())
                 {
-                    Vector2 mPos = monster.GetPosition2V();
+                    Vector2 mPos = monster.Position2V;
                     if (mPos.x == playerPos.x && mPos.z == playerPos.z)
                     {
                         monstersAtPlayer = monster;
@@ -115,21 +115,21 @@ namespace Text_Game
                 Console.WriteLine("-------------------------");
                 if (currentRoom.CanWalk(CompassDirection.North))
                 {
-                    Console.Write(" Walk North [W]");
+                    Console.Write("Walk North [W]|");
                 }
                 if (currentRoom.CanWalk(CompassDirection.West))
                 {
-                    Console.Write(" Walk West [A]");
+                    Console.Write("Walk West [A]|");
                 }
                 if (currentRoom.CanWalk(CompassDirection.South))
                 {
-                    Console.Write(" Walk South [S]");
+                    Console.Write("Walk South [S]|");
                 }
                 if (currentRoom.CanWalk(CompassDirection.East))
                 {
-                    Console.Write(" Walk East [D]");
+                    Console.Write("Walk East [D]|");
                 }
-                Console.WriteLine("");
+                Console.Write("\n");
                 if (currentRoom.GetRoomType() == RoomType.StairCase)
                 {
                     Console.WriteLine("-------------------------");
@@ -142,7 +142,6 @@ namespace Text_Game
                 DrawCurrentRoom();
                 Console.WriteLine("-------------------------");
                 Console.WriteLine("Quit [Esc]");
-
                 ConsoleKeyInfo input = Console.ReadKey();
                 if (input.Key == ConsoleKey.W && currentRoom.CanWalk(CompassDirection.North))
                 {
@@ -187,7 +186,6 @@ namespace Text_Game
                         if (securityCheck.Key == ConsoleKey.Y)
                         {
                             gameRunning = false;
-                            actionTaken = true;
                             return;
                         }
                         else if (securityCheck.Key == ConsoleKey.N)
@@ -261,22 +259,23 @@ namespace Text_Game
                 while (true)
                 {
                     Console.Clear();
-                    Console.WriteLine("----Battle----\n" +
-                                     $"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()} Hp\n" +
-                                     $"{monster.GetName()} | {monster.GetHealth()} / {monster.GetMaxHealth()} Hp\n" +
+                    Console.WriteLine("--Player-HP---\n" +
+                                     $"{player.name} | {player.Health} / {player.MaxHealth} Hp\n" +
+                                      "--Monster-HP---" +
+                                     $"{monster.name} | {monster.Health} / {monster.GetMaxHealth()} Hp\n" +
                                       "Attack [A]\n" +
                                       "Heal [H]");
                     Console.Write(">>");
                     input = Console.ReadKey();
-                    Console.WriteLine("--------------");
+                    Console.WriteLine("---------------");
                     if (input.Key == ConsoleKey.A)
                     {
                         Vector2 pDmg = player.GetDamage();
                         int instancePlayerDamage = Program.randomAI.Next(pDmg.x, pDmg.z);
                         monster.ReceiveDmg(instancePlayerDamage);
                         Console.WriteLine($"You strike: {instancePlayerDamage} Damage\n" +
-                                          $"To {monster.GetName()} | {monster.GetHealth()} / {monster.GetMaxHealth()} Hp");
-                        if (monster.GetHealth() <= 0)
+                                          $"To {monster.name} | {monster.Health} / {monster.maxHealth} Hp");
+                        if (monster.Health <= 0)
                         {
                             return false;
                         }
@@ -288,22 +287,22 @@ namespace Text_Game
                         int instancePlayerHeal = Program.randomAI.Next(pDmg.x, pDmg.z);
                         player.Heal(instancePlayerHeal);
                         Console.WriteLine($"{player.name} Heals: {instancePlayerHeal} Hp");
-                        Console.WriteLine($"{player.name} | {player.GetHealth()} / {player.GetMaxHealth()}");
+                        Console.WriteLine($"{player.name} | {player.Health} / {player.MaxHealth}");
                         break;
                     }
                 }
-                if (monster.GetHealth() <= 0)
+                if (monster.Health <= 0)
                 {
-                    Console.WriteLine($"{monster.GetName()} Died");
+                    Console.WriteLine($"{monster.name} Died");
                     Console.ReadKey();
                     tempBattle = false;
                     return false;
                 }
                 else
                 {
-                    monster.DoAction();
+                    monster.CombatAction();
                 }
-                if (player.GetHealth() <= 0)
+                if (player.Health <= 0)
                 {
                     return true; // player Died
                 }
@@ -652,7 +651,7 @@ namespace Text_Game
                         break;
                 }
             }
-            Vector2 playerPos = Program.GetPlayer().GetPositionV2();
+            Vector2 playerPos = Program.Player.GetPositionV2();
             if (pos.x == playerPos.x && pos.z == playerPos.z && withPlayer)
             {
                 returnValue[1] = returnValue[1].Remove(1, 1).Insert(1, "P");
@@ -662,7 +661,7 @@ namespace Text_Game
                 Vector2 monsterPosition;
                 foreach (Monster monster in floor.GetMonsterList())
                 {
-                    monsterPosition = monster.GetPosition2V();
+                    monsterPosition = monster.Position2V;
                     if (monsterPosition.x == pos.x && monsterPosition.z == pos.z)
                     {
                         returnValue[1] = returnValue[1].Remove(1, 1).Insert(1, "E");

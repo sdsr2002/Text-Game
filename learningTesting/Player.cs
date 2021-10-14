@@ -18,7 +18,7 @@ namespace Text_Game
         private Vector3 pos;
         private Vector2 pos2D;
         public CompassDirection playerDirection;
-        //
+        // 
         public bool ReceiveDmg(int damage)
         {
             // Receive Damage to Monster
@@ -81,17 +81,8 @@ namespace Text_Game
             this.AddPosition(new Vector3(_pos.x, 0, _pos.z));
             return;
         }
-
-        internal int GetHealth()
-        {
-            return _health;
-        }
-
-        internal int GetMaxHealth()
-        {
-            return _maxHealth;
-        }
-
+        internal int Health => _health;
+        internal int MaxHealth => _maxHealth;
         internal void Heal(int healAmount)
         {
             _health += Program.Clamp(healAmount, 0, int.MaxValue);
