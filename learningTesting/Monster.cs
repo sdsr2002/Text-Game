@@ -13,14 +13,14 @@ namespace Text_Game
         public int maxDmg { get; private set; }
         public int maxHealth { get; private set; }
         public int health { get; private set; }
-        public string _description { get; private set; }
+        public string description { get; private set; }
         protected Vector2 pos;
         protected List<ActionData> actions;
         public Vector2 Damage => new Vector2(minDmg, maxDmg);
         public Vector2 Position2V => pos;
         public int Health => health;
 
-        public Monster(string _name, int _minDmg, int _maxDmg, int _maxHealth, Vector2 _pos,string description)
+        public Monster(string _name, int _minDmg, int _maxDmg, int _maxHealth, Vector2 _pos,string description_)
         {
             SetupAction();
             name = _name;
@@ -29,7 +29,7 @@ namespace Text_Game
             maxHealth = _maxHealth;
             health = maxHealth;
             pos = _pos;
-            _description = description;
+            description = description_;
         }
         public ref List<ActionData> GetActions()
         {

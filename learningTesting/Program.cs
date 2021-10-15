@@ -70,10 +70,13 @@ namespace Text_Game
             Program.player = new Player(_username, new Vector3(1, -1, 1));
             while (true)
             {
-                Console.WriteLine($"Hello {player.name}, do you want to go on an adventure?"
+                Console.WriteLine($"Hello {player.name}, Welcome."
                     + $"{Environment.NewLine}"
-                    + "[Y]es or [N]o | Name Change [C] | Set Seed[S]"
-                    + $"\nSeed:{seed}"
+                    +"|Start game  [Y]|\n"
+                    +$"|Name Change [C]|{player.name}\n"
+                    +"|Change Seed [S]|"
+                    + $"Seed:{seed}\n"
+                    +"|Exit      [Esc]|"
                     );
                 Console.Write(">>");
                 ConsoleKeyInfo userInput;
@@ -89,10 +92,10 @@ namespace Text_Game
                         StartGame();
                         break;
                     }
-                    else if (userInput.Key == ConsoleKey.N)
+                    else if (userInput.Key == ConsoleKey.Escape)
                     {
-                        Console.WriteLine("\nBye");
-                        Console.ReadKey();
+                        Console.WriteLine("\nBBye");
+                        System.Threading.Thread.Sleep(1000);
                         return;
                     }
                     else if (userInput.Key == ConsoleKey.C)
@@ -140,12 +143,6 @@ namespace Text_Game
                 return;
             }
             str.Remove(index, 1).Insert(index, replace.ToString());
-            
-            //char[] chars = str.ToCharArray();
-            //chars[index] = replace;
-            //string t = new String(chars);
-            //// Console.WriteLine($"Replaced: {str} with {t} ");
-            //return new String(chars);
         }
     }
     public class Vector2
