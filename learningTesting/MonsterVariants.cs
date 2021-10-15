@@ -7,6 +7,26 @@ using System.Threading.Tasks;
 
 namespace Text_Game
 {
+    public enum MonsterGrade
+    {
+        Common,
+        Uncommon,
+        Rare,
+        Epic,
+        Legendary
+    }
+
+    static public class MonsterVariants
+    {
+        static public Dictionary<MonsterType,Action<Vector2>> commonMonsters = new Dictionary<MonsterType, Action<Vector2>>()
+        {
+            { MonsterType.Goblin, Goblin()}
+        }
+        static public Monster GetMonsterVariant(int monsterLevelGrade)
+        {
+            return new Goblin(new Vector2(1,1));
+        }
+    }
     public class Goblin : Monster
     {
         public Goblin(Vector2 pos): base("Goblin",1,3,4,pos, "a little Green man") 
@@ -23,7 +43,6 @@ namespace Text_Game
         protected void Scream()
         {
             Console.WriteLine("Goblin Screams");
-            Console.Beep();
         }
     }
     public class Kobold : Monster
@@ -54,6 +73,7 @@ namespace Text_Game
             };
         }
     }
+
     public enum MonsterType
     {
         Goblin,

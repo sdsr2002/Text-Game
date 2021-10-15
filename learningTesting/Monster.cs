@@ -14,6 +14,7 @@ namespace Text_Game
         public int maxHealth { get; private set; }
         public int health { get; private set; }
         public string description { get; private set; }
+        public int monsterGrade;
         protected Vector2 pos;
         protected List<ActionData> actions;
         public Vector2 Damage => new Vector2(minDmg, maxDmg);
