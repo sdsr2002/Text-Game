@@ -15,7 +15,7 @@ namespace Text_Game
         Epic,
         Legendary
     }
-
+    /*
     static public class MonsterVariants
     {
         static public Dictionary<MonsterType,Action<Vector2>> commonMonsters = new Dictionary<MonsterType, Action<Vector2>>()
@@ -27,6 +27,7 @@ namespace Text_Game
             return new Goblin(new Vector2(1,1));
         }
     }
+    */
     public class Goblin : Monster
     {
         public Goblin(Vector2 pos): base("Goblin",1,3,4,pos, "a little Green man") 
